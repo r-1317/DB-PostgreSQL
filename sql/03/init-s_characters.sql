@@ -39,9 +39,8 @@ VALUES
   ('Jack', 'Wizard', 61, 0.05, 'hameln', '2024-07-12', '2025-09-02 15:43:00');
 
 SELECT
-  8 AS "RegionID", -- 定数値のカラム
-  'Zipangu' AS "World", -- 定数値のカラム
-  id AS "ID",
-  name AS "名前"
+  id,
+  name,
+  created_on AS "created_on1"
 FROM
   s_characters;
