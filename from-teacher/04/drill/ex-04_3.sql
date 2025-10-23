@@ -1,7 +1,10 @@
 SELECT
   id,
   name,
-  level,
   created_on
 FROM
-  s_characters;
+  s_characters
+OFFSET
+  10
+LIMIT
+  5;
