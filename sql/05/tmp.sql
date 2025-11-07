@@ -1,23 +1,12 @@
 SELECT
-  name AS "最も短い名前"
+  job,
+  ROUND(AVG(level), 1) AS "avg_lv",
+  COUNT(*) AS "num"
 FROM
   s_characters
-WHERE
-  LENGTH(name) = (
-    SELECT
-      MIN(LENGTH(name))
-    FROM
-      s_characters
-  );
-
-SELECT
-  name AS "最も長い名前"
-FROM
-  s_characters
-WHERE
-  LENGTH(name) = (
-    SELECT
-      MAX(LENGTH(name))
-    FROM
-      s_characters
-  );
+GROUP BY
+  job
+HAVING
+  COUNT(*) > 2
+ORDER BY
+  AVG(level) DESC;
