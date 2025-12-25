@@ -1,13 +1,8 @@
 SELECT
-  character_id,
-  name,
-  (
-    SELECT
-      COUNT(*)
-    FROM
-      x_character_items AS ci
-    WHERE
-      character_id = x_characters.character_id
-  ) AS item_kinds
+  g.guild_id,
+  g.name,
+  c.name AS "owner_name",
+  c.level AS "owner_level"
 FROM
-  x_characters
+  x_guilds AS g
+  JOIN x_characters AS c ON g.owner_id = c.character_id;
