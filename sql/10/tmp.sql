@@ -1,18 +1,13 @@
 SELECT
-  g.guild_id,
-  g.name AS "guild",
-  j.name AS "job",
-  COUNT(*)
+  c.character_id,
+  c.name || '( ' || MAX(j.name) || ')' AS "name (job)",
+  SUM(ci.qty) AS total_qty
 FROM
-  x_characters AS c
-  JOIN x_guild_characters AS gc ON c.character_id = gc.character_id
-  JOIN x_guilds AS g ON g.guild_id = gc.guild_id
-  JOIN x_jobs AS j ON c.job_id = j.job_id
-WHERE
-  c.deleted_at IS NULL
+  n_characters AS c
+  RIGHT JOIN n_character_items AS ci ON c.character_id = ci.character_id
+  -- RIGHT JOIN n_items AS i ON ci.item_id = i.item_id
+  LEFT JOIN n_jobs AS j ON c.job_id = j.job_id
 GROUP BY
-  g.guild_id,
-  j.job_id
+  c.character_id
 ORDER BY
-  g.guild_id,
-  j.job_id;
+  c.character_id
