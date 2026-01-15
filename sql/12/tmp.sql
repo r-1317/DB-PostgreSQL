@@ -1,27 +1,45 @@
--- レコードの全削除（念のため）
-TRUNCATE TABLE x_gold_transfers RESTART IDENTITY;
-
--- トランザクションの開始
 START TRANSACTION;
 
--- リテラル挿入（VALUES句を用いた挿入）
-INSERT INTO
-  x_gold_transfers (from_character_id, to_character_id, amount, transferred_at)
-VALUES
-  (6, 8, 1600, '2025-12-28 10:22'),
-  (18, 12, 28000, '2025-12-30 01:43'),
-  (NULL, 14, 10000, '2026-01-01 00:01');
-
--- 確認
+-- 確認: 流通数が6個以上のアイテムの現在価格
 SELECT
-  LEFT(gt.transfer_id::TEXT, 8) AS "id",
-  COALESCE(cf.name, '__SYS__') AS "from",
-  COALESCE(ct.name, '__SYS__') AS "to",
-  TO_CHAR(gt.amount, '999,999') AS "amount",
-  gt.transferred_at
+  i.item_id,
+  MAX(i.name) AS "item",
+  MAX(i.price) AS "price",
+  SUM(ci.qty) AS "total"
 FROM
-  x_gold_transfers AS gt
-  LEFT JOIN x_characters AS cf ON gt.from_character_id = cf.character_id
-  LEFT JOIN x_characters AS ct ON gt.to_character_id = ct.character_id;
-  -- ロールバックによる処理の取り消し
+  x_items AS i
+  JOIN x_character_items AS ci ON i.item_id = ci.item_id
+  JOIN x_characters AS c ON ci.character_id = c.character_id
+WHERE
+  c.deleted_at IS NULL
+GROUP BY
+  i.item_id
+HAVING
+  SUM(ci.qty) >= 6
+ORDER BY
+  i.item_id;
+
+-- 本体: サブクエリを用いた更新処理
+UPDATE x_items AS i
+SET
+  price = CEILING(i.price * 1.2 / 10) * 10
+WHERE
+  item_id IN (
+    SELECT
+      ci.item_id
+    FROM
+      x_character_items AS ci
+      JOIN x_characters AS c2 ON ci.character_id = c2.character_id
+    WHERE
+      c2.deleted_at IS NULL
+    GROUP BY
+      ci.item_id
+    HAVING
+      SUM(ci.qty) >= 6
+  )
+RETURNING
+  item_id,
+  name,
+  price AS "updated_price";
+
 ROLLBACK;
