@@ -1,49 +1,33 @@
+-- 論理削除済みキャラのみを対象として、ジョブを基準にキャラを列挙
 SELECT
-  COALESCE(c1.item_id, c2.item_id, c3.item_id) AS "i_id",
-  COALESCE(c1.name, c2.name, c3.name) AS "item_name",
-  c1.qty AS "Marvin",
-  c2.qty AS "Jack",
-  c3.qty AS "Alice",
-  COALESCE(c1.description, c2.description, c3.description) AS "description"
+  j.job_id,
+  j.name AS "job",
+  c.name,
+  CASE
+    WHEN c.deleted_at IS NULL THEN ''
+    ELSE 'YES'
+  END AS "is_deleted"
 FROM
-  (
-    SELECT
-      ci.item_id,
-      i.name,
-      ci.qty,
-      i.description
-    FROM
-      x_character_items AS ci
-      JOIN x_items AS i ON ci.item_id = i.item_id
-      JOIN x_characters AS C ON ci.character_id = c.character_id
-    WHERE
-      c.name = 'Marvin'
-  ) AS c1
-  FULL OUTER JOIN ( -- ◀ 完全外部結合
-    SELECT
-      ci.item_id,
-      i.name,
-      ci.qty,
-      i.description
-    FROM
-      x_character_items AS ci
-      JOIN x_items AS i ON ci.item_id = i.item_id
-      JOIN x_characters AS C ON ci.character_id = c.character_id
-    WHERE
-      c.name = 'Jack'
-  ) AS c2 ON c1.item_id = c2.item_id
-  FULL OUTER JOIN ( -- ◀ 完全外部結合
-    SELECT
-      ci.item_id,
-      i.name,
-      ci.qty,
-      i.description
-    FROM
-      x_character_items AS ci
-      JOIN x_items AS i ON ci.item_id = i.item_id
-      JOIN x_characters AS C ON ci.character_id = c.character_id
-    WHERE
-      c.name = 'Alice'
-  ) AS c3 ON c1.item_id = c3.item_id
+  y_jobs AS j
+  LEFT JOIN y_characters AS c ON (
+    j.job_id = c.job_id AND
+    c.deleted_at IS NOT NULL
+  )
 ORDER BY
-  COALESCE(c1.item_id, c2.item_id, c3.item_id);
+  j.job_id;
+
+-- 論理削除済みキャラのみを対象として、ジョブを基準にキャラ人数を集計
+SELECT
+  j.job_id,
+  MAX(j.name) AS "job",
+  COUNT(c.character_id)
+FROM
+  y_jobs AS j
+  LEFT JOIN y_characters AS c ON (
+    j.job_id = c.job_id AND
+    c.deleted_at IS NOT NULL
+  )
+GROUP BY
+  j.job_id
+ORDER BY
+  j.job_id;
