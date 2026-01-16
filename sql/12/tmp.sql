@@ -1,45 +1,31 @@
 START TRANSACTION;
 
--- 確認: 流通数が6個以上のアイテムの現在価格
-SELECT
-  i.item_id,
-  MAX(i.name) AS "item",
-  MAX(i.price) AS "price",
-  SUM(ci.qty) AS "total"
-FROM
-  x_items AS i
-  JOIN x_character_items AS ci ON i.item_id = ci.item_id
-  JOIN x_characters AS c ON ci.character_id = c.character_id
-WHERE
-  c.deleted_at IS NULL
-GROUP BY
-  i.item_id
-HAVING
-  SUM(ci.qty) >= 6
-ORDER BY
-  i.item_id;
-
--- 本体: サブクエリを用いた更新処理
 UPDATE x_items AS i
 SET
-  price = CEILING(i.price * 1.2 / 10) * 10
-WHERE
-  item_id IN (
+  price = i.price + pd.price_delta
+FROM
+  (
     SELECT
-      ci.item_id
+      i2.item_id AS "item_id",
+      CASE
+        WHEN COUNT(c.character_id) > 0 THEN COUNT(c.character_id) * 50
+        ELSE -100
+      END AS "price_delta"
     FROM
-      x_character_items AS ci
-      JOIN x_characters AS c2 ON ci.character_id = c2.character_id
-    WHERE
-      c2.deleted_at IS NULL
+      x_items AS i2
+      LEFT JOIN x_character_items AS ci ON i2.item_id = ci.item_id
+      LEFT JOIN x_characters AS c ON (
+        c.character_id = ci.character_id AND
+        c.deleted_at IS NULL
+      )
     GROUP BY
-      ci.item_id
-    HAVING
-      SUM(ci.qty) >= 6
-  )
+      i2.item_id
+  ) AS pd
+WHERE
+  i.item_id = pd.item_id
 RETURNING
-  item_id,
-  name,
-  price AS "updated_price";
+  i.item_id,
+  i.name,
+  i.price AS "updated_price";
 
 ROLLBACK;
